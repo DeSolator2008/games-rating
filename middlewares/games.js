@@ -6,7 +6,7 @@ const getAllGames = async (req, res, next) => {
     res.status(400);
     res.send({
       status: "error",
-      message: "Нет игр в базе данных. Добавьте игру."
+      message: "Нет игр в базе данных. Добавь игру."
     });
     return;
   }
@@ -38,7 +38,6 @@ const updateGamesArray = (req, res, next) => {
     };
     req.games = [...req.games, req.updatedObject];
     next();
-    return;
   } else {
     res.status(400);
     res.send({ status: "error", message: "Игра с таким именем уже есть." });
@@ -70,4 +69,4 @@ module.exports = {
   updateGamesFile,
   findGameById,
   deleteGame
-};
+}; 
