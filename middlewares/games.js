@@ -1,72 +1,97 @@
-const { readData, writeData } = require("../utils/data");
+const games = require("../models/game");
 
-const getAllGames = async (req, res, next) => {
-  const games = await readData("./data/games.json");
-  if (!games) {
-    res.status(400);
-    res.send({
-      status: "error",
-      message: "Нет игр в базе данных. Добавь игру."
-    });
+const checkIsVoteRequest = async (req, res, next) => {
+if (Object.keys(req.body).length === 1 && req.body.users) {
+  req.isVoteRequest = true;
+}
+next();
+}; 
+
+const findAllGames = async (req, res, next) => {
+  if(req.query["categories.name"]) { 
+    req.gamesArray = await games.findGameByCategory(req.query["categories.name"]);
+    next();
     return;
   }
-  req.games = games;
+  req.gamesArray = await games
+    .find({})
+    .populate("categories")
+    .populate({
+      path: "users",
+      select: "-password" 
+    })
   next();
 };
 
-const checkIsTitleInArray = (req, res, next) => {
-  req.isNew = !Boolean(req.games.find(item => item.title === req.body.title));
+const findGameById = async (req, res, next) => {
+  try {
+    req.game = await games.findById(req.params.id)
+    .find({})
+    .populate("categories")
+    .populate({
+      path: "users",
+      select: "-password"
+    });
   next();
-};
-
-const updateGamesArray = (req, res, next) => {
-  if (req.isNew) {
-    const inArray = req.games.map(item => Number(item.id));
-    let maximalId;
-    if (inArray.length > 0) {
-      maximalId = Math.max(...inArray);
-    } else {
-      maximalId = 0;
-    }
-
-    req.updatedObject = {
-      id: maximalId + 1,
-      title: req.body.title,
-      image: req.body.image,
-      link: req.body.link,
-      description: req.body.description
-    };
-    req.games = [...req.games, req.updatedObject];
-    next();
-  } else {
-    res.status(400);
-    res.send({ status: "error", message: "Игра с таким именем уже есть." });
+  } 
+  catch (error) {
+      res.status(404).send({ message: "Game not found" });
   }
-};
-
-const updateGamesFile = async (req, res, next) => {
-  await writeData("./data/games.json", req.games);
-  next();
-};
-
-const findGameById = (req, res, next) => {
-  const id = Number(req.params.id);
-  req.game = req.games.find(item => item.id === id);
-  next();
-};
-
-const deleteGame = (req, res, next) => {
-  const id = req.game.id;
-  const index = req.games.findIndex(item => item.id === id);
-  req.games.splice(index, 1);
-  next();
-};
-
-module.exports = {
-  getAllGames,
-  checkIsTitleInArray,
-  updateGamesArray,
-  updateGamesFile,
-  findGameById,
-  deleteGame
 }; 
+
+const updateGame = async (req, res, next) => {
+  try {
+    req.game = await games.findByIdAndUpdate(req.params.id, req.body);
+    next();
+  } catch (error) {
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).send(JSON.stringify({ message: "Ошибка обновления игры" }));
+  }
+}; 
+
+const deleteGame = async (req, res, next) => {
+  try {
+    req.game = await games.findByIdAndDelete(req.params.id);
+    next();
+  } catch (error) {
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).send(JSON.stringify({ message: "Ошибка удаления игры" }));
+  }
+}; 
+
+const checkEmptyFields = async (req, res, next) => {
+  if(req.isVoteRequest) {
+    next();
+    return;
+  }  
+  {
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).send(JSON.stringify({ message: "Заполни все поля" }));
+  } 
+}; 
+
+const checkIfCategoriesAvaliable = async (req, res, next) => {
+  if(req.isVoteRequest) {
+    next();
+    return;
+  } 
+  else {
+  next();
+}
+}; 
+
+const checkIfUsersAreSafe = async (req, res, next) => {
+if (!req.body.users) {
+  next();
+  return;
+}
+if (req.body.users.length - 1 === req.game.users.length) {
+  next();
+  return;
+} else {
+  res.setHeader("Content-Type", "application/json");
+      res.status(400).send(JSON.stringify({ message: "Нельзя удалять пользователей или добавлять больше одного пользователя" }));
+}
+}; 
+
+module.exports = findAllGames, findGameById, checkIsVoteRequest, updateGame, deleteGame, checkEmptyFields, checkIfCategoriesAvaliable, checkIfUsersAreSafe; 
