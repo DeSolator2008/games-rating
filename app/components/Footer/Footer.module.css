@@ -21,6 +21,11 @@
   font-size: 26px;
 }
 
+.social-list {
+  display: flex;
+  border-left: 14px solid white;
+}
+
 .footer .social-list__link {
   text-transform: uppercase;
   font-weight: bold;
@@ -55,10 +60,14 @@
 }
 
 @media (width <= 650px) {
-
   .footer {
     flex-direction: column;
     padding: 14px;
+  }
+
+  .social-list {
+    border-left: none;
+    gap: 10px;
   }
 
   .footer .social-list__link {

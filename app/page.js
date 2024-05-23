@@ -1,36 +1,27 @@
-"use client";
-import { useEffect } from "react";
-import { getNormalizedGamesDataByCategory } from "./api/api-utils.js";
-import { endpoints } from "./api/config.js";
-import { Banner } from "./components/Banner/Banner";
-import { CardList } from "./components/CardListSection/CardList.jsx";
-import { Promo } from "./components/Promo/Promo";
+'use client';
 
-export default async function Home() {
-  useEffect(() => {
-    const getData = async (url) => {
-      try {
-        const response = await fetch(url);
-        if (response.status !== 200) {
-          throw new Error("Ошибка получения данных");
-        }
-        const data = await response.json();
-        console.log(data);
-        return data;
-      } catch (error) {
-        return error;
-      }
-    };
-    getData("https://api-code-2.practicum-team.ru/games");
-  }, []);
-  const popularGames = await getNormalizedGamesDataByCategory(endpoints.games, "popular");
-  const newGames = await getNormalizedGamesDataByCategory(endpoints.games, "new"); 
+import { endpoints } from "./api/config";
+import { Banner } from "./components/Banner/Banner";
+import { CardsListSection } from "./components/CardsListSection/CardsListSection";
+import { Promo } from "./components/Promo/Promo";
+import { useGetDataByCategory } from "./api/api-hooks";
+import { Preloader } from "@/app/components/Preloader/Preloader";
+
+export default function Home() {
+  const popularGames = useGetDataByCategory(endpoints.games, "popular");
+  const newGames = useGetDataByCategory(endpoints.games, "new");
   return (
     <main className="main">
-      <Banner/>
-      <CardList id="popular" title="Популярное" data={popularGames} />
-      <CardList id="new" title="Новинки" data={newGames} />
-      <Promo/>
+      <Banner />
+      {
+        (popularGames && newGames) ? (
+          <>
+            <CardsListSection id="popular" title="Популярные" data={popularGames} type="slider"/>
+            <CardsListSection id="new" title="Новинки"  data={newGames} type="slider"/>
+          </>
+        ) : <Preloader />
+      }
+      <Promo />
     </main>
   );
 }
